@@ -4,8 +4,8 @@
 # Se o trabalho for feito em grupo, coloque os nomes de 
 # todos os integrantes (copie e cole as linhas abaixo)
 #
-# Nome:
-# NUSP:
+# Nome: Iago Cesar Tavares de Souza
+# NUSP: 17466770
 #
 # ---
 #
@@ -51,19 +51,26 @@ class Agent:
 
         # The key_handler object handles keyboard events. It's basically a map indexed by Pyglet
         # keys with values True if the key is being held, or False otherwise.
-        if self.key_handler[key.W]:
+        if self.key_handler[key.UP]:
             # Set the values of pwm_left and pwm_right to make your robot move forward
             # at a reasonable speed (perhaps add acceleration/deacceleration)
             print('Move Forward!')
-        if self.key_handler[key.A]:
+            pwm_left, pwm_right = 0.8, 0.8
+
+        if self.key_handler[key.LEFT]:
             # Set the values of pwm_left and pwm_right to make your robot turn left
             print('Turn Left!')
-        if self.key_handler[key.S]:
+            pwm_left, pwm_right = 0.5, 0.8
+
+        if self.key_handler[key.DOWN]:
             # Set the values of pwm_left and pwm_right to make your robot move backward
-            print('Move sBackward!')
-        if self.key_handler[key.D]:
+            print('Move Backward!')
+            pwm_left, pwm_right = -0.8, -0.8
+
+        if self.key_handler[key.RIGHT]:
             # Set the values of pwm_left and pwm_right to make your robot turn right
             print('Turn Right!')
+            pwm_left, pwm_right = 0.8, 0.5
 
         # At each step, the environment may (or may not) change given your actions. Function step takes
         # as parameter the two motor powers as action and returns an observation (what the robot is
