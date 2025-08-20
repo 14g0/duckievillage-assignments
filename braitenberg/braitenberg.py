@@ -38,8 +38,8 @@ class Agent:
         """ Initializes agent """
         self.env = environment
         # Color segmentation hyperspace
-        self.lower_hsv = np.array([5, 70, 90])
-        self.upper_hsv = np.array([40, 255, 255])
+        self.lower_hsv = np.array([20, 180, 180])
+        self.upper_hsv = np.array([100, 255, 255])
         # Acquire image for initializing activation matrices
         img = self.env.front()
         img_shape = img.shape[0], img.shape[1]
@@ -58,8 +58,9 @@ class Agent:
         hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
         ### TODO! Replace with your code ################################################
         mask = cv2.inRange(hsv, self.lower_hsv, self.upper_hsv)//255
-        #     masked = cv2.bitwise_and(image, image, mask=mask)
-        return mask
+        masked_img = cv2.bitwise_and(image, image, mask=mask)
+        # masked = cv2.bitwise_and(image, image, mask=mask)
+        return cv2.cvtColor(masked_img, cv2.COLOR_RGB2GRAY) / 255.0
 
     def send_commands(self, dt):
         ''' Agent control loop '''
@@ -77,11 +78,15 @@ class Agent:
         ### TODO! ########################################################################
         # Tweak with the constants below to get to change velocity or stabilize movements
         # Recall that pwm sets wheel torque, and is capped to be in [-1,1]
-        gain = 5.0
-        const = 0.2 # power under null activation - this ensures the robot does not halt
-        pwm_left = const + R * gain
-        pwm_right = const + L * gain
-        # print('>', L, R, pwm_left, pwm_right) # uncomment for debugging
+        if( L > 0.1 or R > 0.1):
+            pwm_left = 0
+            pwm_right = 0
+        else:
+            gain = 3.0
+            const = 0.2 # power under null activation - this ensures the robot does not halt
+            pwm_left = const + R * gain
+            pwm_right = const + L * gain
+        print('>', L, R, pwm_left, pwm_right) # uncomment for debugging
         # Now send command
         self.env.step(pwm_left, pwm_right)
         self.env.render('human')

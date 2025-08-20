@@ -4,8 +4,8 @@
 # Se o trabalho for feito em grupo, coloque os nomes de 
 # todos os integrantes (copie e cole as linhas abaixo)
 #
-# Nome:
-# NUSP:
+# Nome: Iago Cesar Tavares de Souza
+# NUSP: 17466770
 #
 # ---
 #
@@ -37,10 +37,10 @@ class Agent:
         """ Initializes agent """
         self.env = environment
         # Color segmentation hyperspace - TODO: MODIFY THE VALUES BELOW
-        self.inner_lower = np.array([0, 0, 0])
-        self.inner_upper = np.array([179, 255, 255])
-        self.outer_lower = np.array([0, 0, 0])
-        self.outer_upper = np.array([179, 255, 255])
+        self.inner_lower = np.array([20, 150, 180])
+        self.inner_upper = np.array([100, 255, 255])
+        self.outer_lower = np.array([0, 0, 160])
+        self.outer_upper = np.array([179, 80, 255])
         # Acquire image for initializing activation matrices
         img = self.env.front()
         img_shape = img.shape[0], img.shape[1]
@@ -74,8 +74,13 @@ class Agent:
         # run image processing routines
         P, Q, M = self.preprocess(img) # returns inner, outter and combined mask matrices
         # build left and right motor signals from connection matrices and masks (this is a suggestion, feel free to modify it)
-        L = float(np.sum(P * self.inner_left_motor_matrix)) + float(np.sum(Q * self.outer_left_motor_matrix))
-        R = float(np.sum(P * self.inner_right_motor_matrix)) + float(np.sum(Q * self.outer_right_motor_matrix))
+        left_motor_yellow = float(np.sum(P * self.inner_left_motor_matrix))
+        left_motor_white = float(np.sum(Q * self.outer_left_motor_matrix))
+        right_motor_yellow = float(np.sum(P * self.inner_right_motor_matrix))
+        right_motor_white = float(np.sum(Q * self.outer_right_motor_matrix))
+
+        L = 2*left_motor_yellow + 3*right_motor_white
+        R = 2*right_motor_yellow + 3*left_motor_white   
         # Upper bound on the values above (very loose bound)
         limit = img.shape[0]*img.shape[1]*2
         # These are big numbers, better to rescale them to the unit interval
@@ -83,11 +88,11 @@ class Agent:
         R = rescale(R, 0, limit)
         # Tweak with the constants below to get to change velocity or to stabilize the behavior
         # Recall that the pwm signal sets the wheel torque, and is capped to be in [-1,1]
-        gain = 3.0   # increasing this will increasing responsitivity and reduce stability
+        gain = 8  # increasing this will increasing responsitivity and reduce stability
         const = 0.15 # power under null activation - this affects the base velocity
         pwm_left = const + R * gain
         pwm_right = const + L * gain
-        # print('>', L, R, pwm_left, pwm_right) # uncomment for debugging
+        print('>', L, R, pwm_left, pwm_right) # uncomment for debugging
         # Now send command to motors
         self.env.step(pwm_left, pwm_right)
         #  for visualization
