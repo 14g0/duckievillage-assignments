@@ -15,15 +15,14 @@
 #  - Usar a arquitetura de um veículo de Braitenberg para implementar um veículo seguidor de faixa.
 #
 # Não se esqueça de executar este arquivo do diretório raiz do Duckievillage (p.ex.):
-#   cd ~/MAC0318/duckievillage
-#   conda activate duckietown
-#   python3 assignments/braitenberg/lane_following.py
+#   cd ~/duckievillage
+#   source bin/activate
+#   python3 assignments/braitenberg_lf/lane_following.py
 #
 # Instruções:
 #  0. Preencha o cabeçalho acima
 #  1. Assegure-se que o código submetido é o correto e funcionando. Se seu código não roda, você receberá nota 0 na atividade.
 #  2. Submeta este arquivo no e-disciplinas.
-#  3. Coloque esse arquivo no seu repositório pessoal (sugestão: fazendo um `fork` do repositório no gitlab). Você usará sua solução como base em outras atividades futuras.
 
 import sys
 import pyglet
@@ -105,7 +104,7 @@ def main():
     env = create_env(
       raw_motor_input = True,
       seed = 101,
-      map_name = './maps/loop_empty.yaml',
+      map_name = './maps/loop_empty',
       draw_curve = False,
       draw_bbox = False,
       domain_rand = False,
@@ -114,7 +113,7 @@ def main():
       distortion = False,
       top_down = False,
       cam_height = 10,
-      is_external_map = True,
+      #is_external_map = True,
     )
 
     angle = env.unwrapped.cam_angle[0]

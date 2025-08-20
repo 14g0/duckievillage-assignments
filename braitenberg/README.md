@@ -71,12 +71,22 @@ implementar diferentes comportamentos.
 
 O arquivo [braitenberg.py](./braitenberg.py) contém um código inicial implementando o comportamento agressivo para o agente simulado. 
 Sua primeira tarefa nesta atividade é modificar o arquivo [braitenberg.py](./braitenberg.py) para implementar o comportamento enamorado alterando as matrizes de conexões, e valores das constantes e do filtro de cor. As matrizes de conexão são definidas no construtor da classe `Agent`, o filtro é implementado no método `process` e as constantes de controle são definidas no método `send_commands`.
-Submeta sua solução (o arquivo [braitenberg.py](./braitenberg.py)) via e-disciplinas. Lembre-se que para acessar o simulador você deve antes ativar o ambiente:
 
+Para rodar o simulador:
+Lembre-se que para acessar o simulador você deve antes ativar o ambiente:
 ```bash
 cd ~/duckievillage
 source bin/activate 
+python3 assignments/braitenberg/braitenberg.py
 ```
+
+Para sair do simulador, pressione `ESC`. Para reiniciar a simulação (sem precisar reiniciar o programa), pressione `BACKSPACE`
+A tecla `ENTER` faz uma captura da tela e pode ser útil para calibrar o sensor e as matrizes de conexão.
+
+## Submissão
+
+Submeta sua solução (o arquivo [braitenberg.py](./braitenberg.py)) via e-disciplinas. 
+
 
 Com isso pronto, você deve seguir para implementar no robô duckiebot. Para isso, siga as instruções em sala. 
 

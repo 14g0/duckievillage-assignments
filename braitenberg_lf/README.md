@@ -53,4 +53,3 @@ Para esta atividade, vamos supor que o agente inicia em uma posição dentro da 
 ## Submissão
 
 Submeta sua solução final (o arquivo [lane_following.py](./lane_following.py)) via e-disciplinas.
-

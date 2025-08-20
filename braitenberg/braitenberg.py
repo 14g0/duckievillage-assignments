@@ -17,7 +17,7 @@
 # Não se esqueça de executar este arquivo do diretório raiz do Duckievillage (p.ex.):
 #   cd ~/duckievillage
 #   source bin/activate 
-#   python3 assignments/manual/manual.py
+#   python3 assignments/manual/braitenberg.py
 #
 # Instruções:
 #  0. Preencha o cabeçalho acima
@@ -44,10 +44,10 @@ class Agent:
         img = self.env.front()
         img_shape = img.shape[0], img.shape[1]
         # Normalization constant of sensor aggregation
-        limit = img.shape[0]*img.shape[1]/4
+        self.limit = img.shape[0]*img.shape[1]/4
         self.left_motor_matrix = np.zeros(shape=img_shape, dtype="float32")
         self.right_motor_matrix = np.zeros(shape=img_shape, dtype="float32")
-        # TODO! Replace with your code
+        ### TODO! Replace with your code ################################################
         # Each motor activation matrix specifies how much power is given to the respective motor after the image processing routines are applied
         self.left_motor_matrix[:, :img_shape[1]//2] = 1   # -1 'inhibits' motor, +1 'stimulates' motor
         self.right_motor_matrix[:, img_shape[1]//2:] = 1  # this implements the aggressive behaviour
@@ -56,6 +56,7 @@ class Agent:
     def preprocess(self, image: np.ndarray) -> np.ndarray:
         """ Returns a 2D array mask color segmentation of the image """
         hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+        ### TODO! Replace with your code ################################################
         mask = cv2.inRange(hsv, self.lower_hsv, self.upper_hsv)//255
         #     masked = cv2.bitwise_and(image, image, mask=mask)
         return mask
@@ -73,6 +74,7 @@ class Agent:
         self.limit = max(R,max(self.limit,L))
         L = rescale(L, 0, self.limit)
         R = rescale(R, 0, self.limit)
+        ### TODO! ########################################################################
         # Tweak with the constants below to get to change velocity or stabilize movements
         # Recall that pwm sets wheel torque, and is capped to be in [-1,1]
         gain = 5.0
@@ -95,16 +97,16 @@ def main():
     env = create_env(
       raw_motor_input = True,
       seed = 101,
-      map_name = './maps/nothing.yaml',
+      map_name = './maps/nothing',
       draw_curve = False,
       draw_bbox = False,
       domain_rand = False,
-      #color_sky = [0, 0, 0],
+      # color_sky = [0, 0, 0],
       user_tile_start = (0, 0),
       distortion = False,
       top_down = False,
       cam_height = 10,
-      is_external_map = True,
+      #is_external_map = True,
       enable_lightsensor = False
     )
     for o in env.objects: o.scale = 0.085
