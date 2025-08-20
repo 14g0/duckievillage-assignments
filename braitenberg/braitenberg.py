@@ -4,8 +4,8 @@
 # Se o trabalho for feito em grupo, coloque os nomes de 
 # todos os integrantes (copie e cole as linhas abaixo)
 #
-# Nome:
-# NUSP:
+# Nome: Iago Cesar Tavares de Souza
+# NUSP: 17466770
 #
 # ---
 #
