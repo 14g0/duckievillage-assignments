@@ -17,8 +17,8 @@
 #  agents.
 #
 # Don't forget to run this file from the Duckievillage root directory path (example):
-#   cd ~/MAC0318/duckievillage
-#   conda activate duckietown
+#   cd ~/duckievillage
+#   source bin/activate 
 #   python3 assignments/control/openloop/agents.py
 #
 # Submission instructions:
@@ -180,7 +180,7 @@ def main():
         std_l = 1e-7,
         std_r = 1e-7,
         seed = 101,
-        map_name = './maps/grassy_road.yaml',
+        map_name = './maps/grassy_road',
         draw_curve = False,
         draw_bbox = False,
         domain_rand = False,
@@ -189,9 +189,9 @@ def main():
         distortion = False,
         top_down = False,
         cam_height = 10,
-        is_external_map = True,
+        #is_external_map = True,
         randomize_maps_on_reset = False,
-        enable_sun = True,
+        #enable_sun = True,
     )
 
     angle = env.unwrapped.cam_angle[0]
