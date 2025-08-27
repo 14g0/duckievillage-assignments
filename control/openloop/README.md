@@ -8,7 +8,7 @@ em malha aberta de agentes que executam as seguintes trajetórias:
 2. Andar em um círculo até voltar à posiçãi inicial;
 3. Ultrapassar um obstáculo parado na pista.
 
-Recomendamos que antes de prosseguir você leia o [Jupyter notebook sobre modelagem](../Modelagem.ipynb) 
+Recomendamos que antes de prosseguir você leia o [Jupyter notebook sobre cinemática direta](../TeoriaDeControle03.ipynb) 
 para se familiarizar com o desenho de regras de controle em malha aberta para um robô com direção diferencial. 
 
 Para esta atividade, vamos usar o mesmo ambiente e mapa que usamos para a atividade passada.
