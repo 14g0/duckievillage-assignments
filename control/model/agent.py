@@ -53,7 +53,7 @@ class Agent:
 
         # Motor constants
         self.motor_gain = 0.053  # K_m -- you should modify this value
-        self.motor_trim = -0.01   # K_t -- you should modify this value
+        self.motor_trim = 0.00001   # K_t -- you should modify this value
 
         key_handler = key.KeyStateHandler()
         environment.unwrapped.window.push_handlers(key_handler)
