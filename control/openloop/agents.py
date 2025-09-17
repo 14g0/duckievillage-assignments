@@ -50,9 +50,9 @@ class Agent:
         # Distance between wheels.
         self.L = environment.unwrapped.wheel_dist
         # K_m constant.
-        self.K_m = 0.0
+        self.K_m = 0.053
         # K_t constant.
-        self.K_t = 0.0
+        self.K_t = 0.00001
 
         # Record trajectory.
         self.trajectory = [environment.get_position()]
@@ -94,18 +94,24 @@ class SquareAgent(Agent):
         ''' Agent control loop '''
         super().send_commands(dt)
 
-        # Here's a snippet of code for riding in a straight line. Adapt your code to ride in a
-        # rectangle.
         pwm_left, pwm_right = 0, 0
         if self.time > 0:
             self.time -= dt
-            v, w = 0.5, 0.0
-            pwm_left, pwm_right = self.get_pwm_control(v, w)
+
+            for steps in range(100):
+                pwm_left, pwm_right = 0.3, 0.3
+                self.env.step(pwm_left, pwm_right)
+                self.env.render()
+                if(steps % 50 == 0):
+                    for turn in range(25):
+                        pwm_left, pwm_right = 0.0, 0.51
+                        self.env.step(pwm_left, pwm_right)
+                        self.env.render()
+
         elif self.running:
             self.running = False
         # End of snippet of code for line drawing.
 
-        self.env.step(pwm_left, pwm_right)
         self.env.render()
 
 class CircleAgent(Agent):
@@ -122,21 +128,20 @@ class CircleAgent(Agent):
         ''' Agent control loop '''
         super().send_commands(dt)
 
-        # Here's a snippet of code for riding in a straight line. Adapt your code to ride in a
-        # rectangle.
         pwm_left, pwm_right = 0, 0
         if self.time > 0:
             self.time -= dt
-            v, w = 0.5, 0.0
-            pwm_left, pwm_right = self.get_pwm_control(v, w)
+
+            for steps in range(180):
+                pwm_left, pwm_right = 0.15, 0.3
+                self.env.step(pwm_left, pwm_right)
+                self.env.render()
+
         elif self.running:
             self.running = False
-        # End of snippet of code for line drawing.
-
-        self.env.step(pwm_left, pwm_right)
         self.env.render()
 
-class OvertakeAgent(Agent):
+class OvertakeAgent(Agent): 
     def __init__(self, env):
         '''Constructs an OvertakeAgent that does an overtake.'''
         super().__init__(env)
@@ -144,7 +149,7 @@ class OvertakeAgent(Agent):
     def start(self):
         super().start()
         # Initial time we give for the robot when it starts moving. Change as needed.
-        self.time = self.t_0
+        self.time = 1
 
     def send_commands(self, dt):
         ''' Agent control loop '''
@@ -155,8 +160,27 @@ class OvertakeAgent(Agent):
         pwm_left, pwm_right = 0, 0
         if self.time > 0:
             self.time -= dt
-            v, w = 0.5, 0.0
-            pwm_left, pwm_right = self.get_pwm_control(v, w)
+
+            pwm_left, pwm_right = 0, 0
+            if self.time > 0:
+                self.time -= dt
+
+                for steps in range(200):
+                    pwm_left, pwm_right = 0.3, 0.3
+                    self.env.step(pwm_left, pwm_right)
+
+                    if(steps == 90):
+                        for turn in range(75):
+                            pwm_left, pwm_right = 0.15, 0.25
+                            self.env.step(pwm_left, pwm_right)
+                            self.env.render()
+
+                        for turn in range(75):
+                            pwm_left, pwm_right = 0.25, 0.15
+                            self.env.step(pwm_left, pwm_right)
+                            self.env.render()
+
+                    self.env.render()
         elif self.running:
             self.running = False
         # End of snippet of code for line drawing.
@@ -202,7 +226,7 @@ def main():
 
     agents = [SquareAgent(env), CircleAgent(env), OvertakeAgent(env)]
     which = 0
-
+  
     agent = agents[which]
 
     @env.unwrapped.window.event
@@ -219,7 +243,6 @@ def main():
             which = (which + 1) % 3
             pyglet.clock.unschedule(agent.send_commands)
             agent = agents[which]
-            env.reset_pos()
             pyglet.clock.schedule_interval(agent.send_commands, 1.0 / env.unwrapped.frame_rate)
         elif symbol == key.COMMA: # Change to previous agent.
             which = (which + len(agents)-1) % 3
