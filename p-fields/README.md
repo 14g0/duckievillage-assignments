@@ -8,6 +8,20 @@ Nesta atividade, você irá projetar um planejador de movimento reativo baseado 
   </div>
 </figure>
 
+## Tarefa
+
+Antes de iniciar esta tarefa, complete o [notebook Campos Potenciais](./Campos%20Potenciais.ipynb).
+
+Para completar a tarefa, você deve editar o arquivo [agent.py](./agent.py), que contém um código base para implementação de um agente perseguidor baseado em campos potenciais. As funções para cálculo de distância entre pontos, entre ponto e linha e entre ponto e objeto (polígono) já estão implementadas. Você deve implementar as funções que calculam os potenciais de atração e repulsão, e o cálculo de um passo do algoritmo de gradiente que gera uma nova pose.
+
+Para rodar o simulador:
+Lembre-se que para acessar o simulador você deve antes ativar o ambiente:
+```bash
+cd ~/duckievillage
+source bin/activate 
+python3 assignments/p-fields/agents.py
+```
+
 ## Planejador
 
 Seu agente possui conhecimento da sua localização no referencial fixo (posição $`x`$ e $`y`$ e orientação $`\theta`$), das localizações do alvo móvel e dos obstáculos no referencial fixo. Os obstáculos são representados como obstáculos e especificados como uma lista de vértices e o alvo é representado como um ponto.
@@ -73,3 +87,8 @@ O ponto $`q_{t+1}`$ pode então ser usado para projetar sinais de controle de ve
 Nessa proposta, o ponto alvo nunca é de fato alcançado (visto que o alvo é móvel).
 Você deve implementar na função `send_commands` um controlador proporcional de velocidade do robô para seguir o ponto $`q_{t+1}`$ devolvido pela função  `preprocess` a cada instante de decisão.
 
+
+
+## Submissão
+
+Submeta sua solução (o arquivo [agents.py](./agents.py)) via e-disciplinas. 
