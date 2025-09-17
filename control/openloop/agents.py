@@ -1,8 +1,8 @@
 # MAC0318 Intro to Robotics
 # Please fill-in the fields below with your info
 #
-# Name:
-# NUSP:
+# Name: Iago Cesar Tavares de Souza
+# NUSP: 17466770
 #
 # ---
 #
@@ -135,7 +135,7 @@ class CircleAgent(Agent):
             for steps in range(180):
                 pwm_left, pwm_right = 0.15, 0.3
                 self.env.step(pwm_left, pwm_right)
-                self.env.render()
+                self.env.render()   
 
         elif self.running:
             self.running = False

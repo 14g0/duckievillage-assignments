@@ -1,8 +1,8 @@
 # MAC0318 Intro to Robotics
 # Please fill-in the fields below with your info
 #
-# Name:
-# NUSP:
+# Name: Iago Cesar Tavares de Souza
+# NUSP: 17466770
 #
 # ---
 #
@@ -46,9 +46,15 @@ class Agent:
         self.C = 6.0 # constant for combining output values
         key_handler = key.KeyStateHandler()
         environment.unwrapped.window.push_handlers(key_handler)
-        self.velocity = 0.0 # robot's logitudinal velocity
+        self.velocity = 0.2 # robot's logitudinal velocity
         self.rotation = 0.0 # robot's angular velocity
         self.key_handler = key_handler
+
+        self.Kp = 4
+        self.Ki = 0.1
+        self.Kd = 0.2
+        self.integralError = 0
+        self.previousError = 0
 
     def preprocess(self) -> float:
         '''Returns the metric to be used as signal for the PID controller.'''
@@ -63,24 +69,19 @@ class Agent:
 
     def send_commands(self, dt):
         ''' Agent control loop '''
-        # Manual control for testing in order to understand the environment.
-        # You should delete this snippet after your controller is set.
-        if self.key_handler[key.W]:
-            self.velocity = 0.2
-        if self.key_handler[key.A]:
-            self.rotation += 0.5
-        if self.key_handler[key.S]:
-            self.velocity = 0.0
-        if self.key_handler[key.D]:
-            self.rotation = -0.5
-        # End of remote control snippet.
+        y = self.preprocess()
+        error = -y
+        self.integralError += error * dt
+        derivativeError = (error - self.previousError) / dt
+
+        self.rotation = (
+            self.Kp * error +
+            self.Ki * self.integralError +
+            self.Kd * derivativeError
+        )
+        self.previousError = error
 
         pwm_left, pwm_right = self.get_pwm_control(self.velocity, self.rotation)
-
-        # Target value for lane-following.
-        y = self.preprocess()
-        # print(y) # uncomment this for debugging
-
         self.env.step(pwm_left, pwm_right) # send commands to motor
         self.env.render() # simulate environment
 
