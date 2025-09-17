@@ -50,9 +50,9 @@ class Agent:
         self.rotation = 0.0 # robot's angular velocity
         self.key_handler = key_handler
 
-        self.Kp = 4
+        self.Kp = 2
         self.Ki = 0.1
-        self.Kd = 0.2
+        self.Kd = 1
         self.integralError = 0
         self.previousError = 0
 
