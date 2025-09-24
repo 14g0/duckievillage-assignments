@@ -1,18 +1,21 @@
+###
+### TODO: Replace Tensorflow code with PyTorch
+###
 # MAC0318 - Intro to Robotics
 #
 # Name:
-# NUSP:
+# NUSP:    
 #
 # ---
 #
 # Assignment 8 - Lane following as a regression task
 #
 # Don't forget to run this file from the Duckievillage root directory path (example):
-#   cd ~/MAC0318/duckievillage
+#   cd ~/duckievillage
 #   git pull
-#   $(bash) update.sh
-#   conda activate duckietown
-#   python3 assignments/pid-control/agent.py
+#   source bin/activate
+#   python3 assignments/learning/agent.py
+#
 #
 # Submission instructions:
 #  0. Add your name and USP number to the file header above.
@@ -26,7 +29,7 @@ import math
 from pyglet.window import key
 from duckievillage import create_env, FRONT_VIEW_MODE
 import cv2
-import tensorflow
+#import tensorflow
 
 # Uncomment the following line if you get an error with the parallel library
 # accusing multiple instantiations
@@ -54,8 +57,10 @@ class Agent:
         self.white_upper = np.array([179, 80, 255], dtype=np.uint8)   
         # horizon threshold -- to crop image below horizon 
         self.horizon = 180 # in pixels, considering a 800x600 image size
+        ######################################################################
         # Regressor - Replace with your model's filepath
-        self.pose_estimator = Agent.load_regression_model("assignments/regression/mlp_lane_pose_estimation.h5")
+        #self.pose_estimator = Agent.load_regression_model("assignments/regression/mlp_lane_pose_estimation.h5")
+        ######################################################################
         # Controller
         key_handler = key.KeyStateHandler()
         environment.unwrapped.window.push_handlers(key_handler)
@@ -63,14 +68,14 @@ class Agent:
         self.rotation = 0.0 # robot's angular velocity
         self.key_handler = key_handler
 
-    @staticmethod
-    def load_regression_model(filepath: str) -> tensorflow.keras.Model:
-        ''' Loads a Tensorflow model. '''
-        #model = keras.models.load_model(filepath)
-        # If you get an error (most likely due to loading a model saved in a newer version of TensorFlow, try using the line below instead)
-        model = tensorflow.keras.models.load_model(filepath, compile=False)
-        print(model.summary())
-        return model
+    # @staticmethod
+    # def load_regression_model(filepath: str) -> tensorflow.keras.Model:
+    #     ''' Loads a Tensorflow model. '''
+    #     #model = keras.models.load_model(filepath)
+    #     # If you get an error (most likely due to loading a model saved in a newer version of TensorFlow, try using the line below instead)
+    #     model = tensorflow.keras.models.load_model(filepath, compile=False)
+    #     print(model.summary())
+    #     return model
 
     def preprocess(self) -> float:
         ''' Returns the metric to be used as signal for the PID controller. '''
@@ -96,8 +101,9 @@ class Agent:
         #  the first dimension of the input is the batch size: we are using a batch of 1 instance, 
         #  so we need to reshape the input to match the expected form -- also, tensorflow outputs tensors, 
         #   and we expect a real value, so we just get the single element of the output
-        estimate = self.pose_estimator.predict(img.reshape((-1,42,80,2)))[0,0] # note, this should match the resized image size above
-        return estimate # value y=6*d + alpha
+        #estimate = self.pose_estimator.predict(img.reshape((-1,42,80,2)))[0,0] # note, this should match the resized image size above
+        estimate = 0.0 
+        return estimate # should approximate value of y = 6*d + alpha
 
     def get_pwm_control(self, v: float, w: float)-> (float, float):
         ''' Takes velocity v and angle w and returns left and right power to motors.'''
@@ -143,7 +149,7 @@ def main():
         std_r = 1e-7,
         seed = 101,
         #map_name = './maps/minimal_udem1.yaml', # use this map to observe the effect of unexpected input (in this case, unseen objects in the images)
-        map_name = './maps/loop_empty.yaml',
+        map_name = './maps/loop_empty',
         draw_curve = False,
         draw_bbox = False,
         domain_rand = False,
@@ -151,7 +157,7 @@ def main():
         distortion = False,
         top_down = False,
         cam_height = 10,
-        is_external_map = True,
+        # is_external_map = True,
         randomize_maps_on_reset = False,
     )
     env.set_view(FRONT_VIEW_MODE)
