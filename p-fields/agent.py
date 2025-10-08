@@ -1,8 +1,8 @@
 # MAC0318 Intro to Robotics
 # Please fill-in the fields below with your info
 #
-# Name:
-# NUSP:
+# Name: Iago Cesar Tavares de Souza
+# NUSP: 17466770
 #
 # ---
 #
@@ -88,14 +88,13 @@ class Agent:
         self.velocity = 0
         self.rotation = 0
 
-        self.K_att = 0
-        self.K_rep = 0
-        self.rho = 0
-        self.alpha = 0
-        self.epsilon = 0
+        self.K_att = 7
+        self.K_rep = 4
+        self.rho = 0.1
+        self.alpha = 0.1
 
-        self.K_v = 0
-        self.K_w = 0
+        self.K_v = 1
+        self.K_w = 2
 
         key_handler = key.KeyStateHandler()
         environment.unwrapped.window.push_handlers(key_handler)
@@ -109,11 +108,18 @@ class Agent:
 
     def F_att(self, p: np.ndarray, g: np.ndarray) -> float:
         '''Returns the attraction force applied at position p from goal g.'''
-        return 0.0
+        return self.K_att * (g - p)
 
     def F_rep(self, p: np.ndarray, o: list) -> float:
         '''Returns the repulsion force applied at position p from object o.'''
-        return 0.0
+        distObj, pontoObj = dist_obj(p, o)
+
+        if distObj < 1e-8:
+            return np.zeros(2)
+        elif distObj <= self.rho:
+            return self.K_rep * (1/distObj - 1/self.rho) * (p - pontoObj) / (distObj**3)
+
+        return np.zeros(2)
 
     def preprocess(self, p: np.ndarray, g: np.ndarray, P: list) -> np.ndarray:
         '''
@@ -121,20 +127,45 @@ class Agent:
         function should then compute the force and return the resulting point for the bot to
         follow.
         '''
-        return np.array([0.0, 0.0])
+        forca = self.F_att(p, g)
+
+        for obstaculo in P:
+            forca += self.F_rep(p, obstaculo)
+
+        return p + self.alpha * forca
+
+    
+    def piRange(self, angulo: float) -> float:
+        return (angulo + np.pi) % (2 * np.pi) - np.pi
+
 
     def send_commands(self, dt: float):
         ''' Agent control loop '''
-        ### Duckietowns reference has the y-axis increasing downward with respect to the top-view
-        ### and the x-axis incresing to the right
-        # current position
-        p = self.env.get_position()
-        # target position
-        q = self.preprocess(p, mr_duckie_pos(), self.env.poly_map.polygons())
-        # robot's heading measured clockwise w.r.t. to the x-axis (i.e, from the x-axis towards the y-axis)
-        a = self.env.cur_angle + np.pi # fix because angle is computed in [-pi, pi] range
-        # TODO: compute velocity and rotation using point-following PID controller 
-        # that you solved in the notebook
+        pwm_left, pwm_right = 0, 0
+
+        posicao = self.env.get_position()
+        theta = self.env.cur_angle
+
+        pontoFinal = self.preprocess(posicao, mr_duckie_pos(), self.env.poly_map.polygons())
+
+        direcao = pontoFinal - posicao
+        distancia = np.linalg.norm(direcao)
+
+        if distancia > 1e-6:
+            # Y do mapa cresce para baixo -> inverter dy ao calcular o ângulo
+            angulo_desejado = math.atan2(-direcao[1], direcao[0])
+            erro_angulo = self.piRange(angulo_desejado - theta)
+        else:
+            erro_angulo = 0.0
+
+        # Reduz velocidade se o robô estiver muito desalinhado
+        self.velocity = self.K_v * distancia * max(0.0, math.cos(erro_angulo))
+        self.rotation = self.K_w * erro_angulo
+
+        # Limites para evitar saturação
+        self.velocity = float(np.clip(self.velocity, -0.8, 0.8))
+        self.rotation = float(np.clip(self.rotation, -2.5, 2.5))
+
         pwm_left, pwm_right = self.get_pwm_control(self.velocity, self.rotation)
         self.env.step(pwm_left, pwm_right)
         self.env.render()
