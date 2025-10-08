@@ -109,11 +109,11 @@ class Agent:
 
     def F_att(self, p: np.ndarray, g: np.ndarray) -> float:
         '''Returns the attraction force applied at position p from goal g.'''
-        return 0
+        return 0.0
 
     def F_rep(self, p: np.ndarray, o: list) -> float:
         '''Returns the repulsion force applied at position p from object o.'''
-        return 0
+        return 0.0
 
     def preprocess(self, p: np.ndarray, g: np.ndarray, P: list) -> np.ndarray:
         '''
@@ -121,24 +121,20 @@ class Agent:
         function should then compute the force and return the resulting point for the bot to
         follow.
         '''
-        return np.array([0, 0])
+        return np.array([0.0, 0.0])
 
     def send_commands(self, dt: float):
         ''' Agent control loop '''
-        pwm_left, pwm_right = 0, 0
-
-        if self.key_handler[key.W]:
-            pwm_left += 0.5; pwm_right += 0.5
-        if self.key_handler[key.A]:
-            pwm_left -= 0.25; pwm_right += 0.25
-        if self.key_handler[key.S]:
-            pwm_left -= 0.5; pwm_right -= 0.5
-        if self.key_handler[key.D]:
-            pwm_left += 0.25; pwm_right -= 0.25
-
+        ### Duckietowns reference has the y-axis increasing downward with respect to the top-view
+        ### and the x-axis incresing to the right
+        # current position
         p = self.env.get_position()
+        # target position
         q = self.preprocess(p, mr_duckie_pos(), self.env.poly_map.polygons())
-
+        # robot's heading measured clockwise w.r.t. to the x-axis (i.e, from the x-axis towards the y-axis)
+        a = self.env.cur_angle + np.pi # fix because angle is computed in [-pi, pi] range
+        # TODO: compute velocity and rotation using point-following PID controller 
+        # that you solved in the notebook
         pwm_left, pwm_right = self.get_pwm_control(self.velocity, self.rotation)
         self.env.step(pwm_left, pwm_right)
         self.env.render()
