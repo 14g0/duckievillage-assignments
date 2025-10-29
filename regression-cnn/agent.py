@@ -1,8 +1,8 @@
 # MAC0318 Intro to Robotics
 # Please fill-in the fields below with your info
 #
-# Name:
-# NUSP:
+# Name: Iago Cesar Tavares de Souza
+# NUSP: 17466770
 #
 # ---
 #
@@ -34,6 +34,14 @@ import tensorflow
 #os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 # Basic agent.
+
+def go_mr_duckie(env):
+    '''Creates and plops a walking Duckie into the environment's world.'''
+    import random
+    possible_starts = [[0.88, 0.86], [3.85, 0.89], [3.90, 2.68], [0.80, 3.26]]
+    p = possible_starts[random.randint(0, len(possible_starts)-1)]
+    return env.add_walking_duckie(p)
+
 class Agent:
     def __init__(self, env, randomize: bool = False):
         self.env = env
@@ -85,6 +93,11 @@ class DataAgent(Agent):
         self.images = []
         self.labels = []
 
+        self.Kp, self.Kd, self.Ki = 4, 0, 0
+        self.integralError = 0
+        self.previousError = 0
+        self.rotation = 0
+
     def preprocess(self) -> float:
         '''Returns the metric to be used as signal for the PID controller.'''
         d, alpha = self.env.lf_target()
@@ -94,15 +107,37 @@ class DataAgent(Agent):
         ''' Agent control loop '''
         pwm_left, pwm_right = 0, 0
 
-        t = self.preprocess()
-        # Paste your PID controller here.
-        velocity = 0.2
-        rotation = -3.5*t
+        if self.key_handler[key.UP]:
+            pwm_left, pwm_right = 0.8, 0.8
 
-        self.images.append(cv2.resize(self.env.front(), (80, 60)))
-        self.labels.append((velocity, rotation))
+        elif self.key_handler[key.LEFT]:
+            pwm_left, pwm_right = 0.5, 0.8
 
-        pwm_left, pwm_right = self.get_pwm_control(velocity, rotation)
+        elif self.key_handler[key.DOWN]:
+            pwm_left, pwm_right = -0.8, -0.8
+
+        elif self.key_handler[key.RIGHT]:
+            pwm_left, pwm_right = 0.8, 0.5
+
+        else:
+            y = self.preprocess()
+            error = -y
+            # Paste your PID controller here.
+            self.integralError += error * dt
+            derivativeError = (error - self.previousError) / dt
+            self.previousError = error
+            rotation = (
+                self.Kp * error +
+                self.Ki * self.integralError +
+                self.Kd * derivativeError
+            )
+            velocity = float(np.clip(0.2*(1 - 0.7*min(1.0, abs(error)/0.6)), 0.10, 0.25))
+
+            self.images.append(cv2.resize(self.env.front(), (80, 42)))
+            self.labels.append((velocity, rotation))
+
+            pwm_left, pwm_right = self.get_pwm_control(velocity, rotation)
+
         self.env.step(pwm_left, pwm_right)
         self.env.render()
 
@@ -111,7 +146,7 @@ class EvaluationAgent(Agent):
     def __init__(self, environment):
         ''' Initializes agent '''
         super().__init__(environment, randomize = False)
-        self.pose_estimator = EvaluationAgent.load_regression_model("assignments/regression-cnn/cnn_lane_pos_estimation.h5")
+        self.pose_estimator = EvaluationAgent.load_regression_model("./assignments/regression-cnn/e2e_cnn.h5")
         self.score = 0
 
     @staticmethod
@@ -125,8 +160,8 @@ class EvaluationAgent(Agent):
 
     def preprocess(self) -> (float, float):
         '''Returns the metric to be used as signal for the PID controller.'''
-        I = cv2.resize(self.env.front(), (80, 60))/255
-        v, w = self.pose_estimator.predict(I.reshape((-1, 60, 80, 3)))[0]
+        I = cv2.resize(self.env.front(), (80, 42))/255
+        v, w = self.pose_estimator.predict(I.reshape((-1, 42, 80, 3)))[0]
         return v, w
 
     def send_commands(self, dt):
@@ -150,7 +185,7 @@ def main():
         std_l = 1e-7,
         std_r = 1e-7,
         seed = 101,
-        map_name = './maps/loop_empty.yaml',
+        map_name = './maps/catch',
         draw_curve = False,
         draw_bbox = False,
         domain_rand = False,
@@ -158,10 +193,12 @@ def main():
         distortion = False,
         top_down = False,
         cam_height = 10,
-        is_external_map = True,
         randomize_maps_on_reset = False,
-        # video_path = "/tmp/regression-cnn.mp4",
+        # video_path = "/tmp/regression-cnn.mp4"
     )
+    global mr_duckie
+    # Mr. Duckie ready for duty.
+    mr_duckie = go_mr_duckie(env)
 
     env.set_view(FRONT_VIEW_MODE)
     env.reset()
@@ -177,12 +214,16 @@ def main():
                 np.save("/tmp/labels.npy", agent.labels, allow_pickle = True)
             env.close()
             sys.exit(0)
+
         elif (symbol == key.E) or (symbol == key.D):
             # Change to evaluation or data collecting agent.
             pyglet.clock.unschedule(agent.send_commands)
             if (symbol == key.E) and (key.E not in agents): agents[key.E] = EvaluationAgent(env)
             agent = agents[symbol]
             pyglet.clock.schedule_interval(agent.send_commands, 1.0 / env.unwrapped.frame_rate)
+
+        elif symbol == key.SPACE:
+            env.reset()
 
         env.render() # show image to user
 
