@@ -1,8 +1,8 @@
 # MAC0318 Intro to Robotics
 # Please fill-in the fields below with your info
 #
-# Name:
-# NUSP:
+# Name: Iago Cesar Tavares de Souza
+# NUSP: 17466770
 #
 # ---
 #
@@ -65,7 +65,6 @@ class Agent:
                 random.choice(g)(px+random.random()*k*0.67, py+random.random()*k*0.67)
 
         self.env.start_pose = self.env.random_road_pose()
-        self.env.random_reset()
 
     def get_pwm_control(self, v: float, w: float)-> (float, float):
         ''' Takes velocity v and angle w and returns left and right power to motors.'''
@@ -89,7 +88,11 @@ class DataAgent(Agent):
 
         self.images = []
         self.labels = []
-        self.paused = False
+
+        self.Kp, self.Kd, self.Ki = 4, 0, 0
+        self.integralError = 0
+        self.previousError = 0
+        self.rotation = 0
 
     def preprocess(self) -> float:
         '''Returns the metric to be used as signal for the PID controller.'''
@@ -99,26 +102,49 @@ class DataAgent(Agent):
     def send_commands(self, dt):
         ''' Agent control loop '''
         pwm_left, pwm_right = 0, 0
+        velocity, rotation = 0.0, 0.0
 
-        t = self.preprocess()
-        # Paste your PID controller here.
-        velocity = 0.2
-        rotation = -3.5*t
 
-        if self.key_handler[key.W]:
-            velocity = 0.2
-        if self.key_handler[key.A]:
-            rotation = 0.8
-        if self.key_handler[key.S]:
-            velocity = 0.0
-        if self.key_handler[key.D]:
-            rotation = -0.8
+        if self.key_handler[key.UP]:
+            pwm_left, pwm_right = 0.5, 0.5
+            velocity, rotation = 0.25, 0.0
+        elif self.key_handler[key.LEFT]:
+            pwm_left, pwm_right = 0.1, 0.3
+            velocity, rotation = 0.15, 1.0
+        elif self.key_handler[key.DOWN]:
+            pwm_left, pwm_right = -0.5, -0.5
+            velocity, rotation = -0.25, 0.0
+        elif self.key_handler[key.RIGHT]:
+            pwm_left, pwm_right = 0.3, 0.1
+            velocity, rotation = 0.15, -1.0
 
-        if not self.paused:
-            self.images.append(cv2.resize(self.env.front(), (80, 60)))
-            self.labels.append((velocity, rotation))
+        else:
+            y = self.preprocess()
+            error = -y
 
-        pwm_left, pwm_right = self.get_pwm_control(velocity, rotation)
+            self.integralError += error * dt
+            derivativeError = (error - self.previousError) / dt
+            self.previousError = error
+            rotation = (
+                self.Kp * error +
+                self.Ki * self.integralError +
+                self.Kd * derivativeError
+            )
+            velocity = float(np.clip(0.2*(1 - 0.7*min(1.0, abs(error)/0.6)), 0.10, 0.25))
+
+            pwm_left, pwm_right = self.get_pwm_control(velocity, rotation)
+
+        if not (math.isfinite(velocity) and math.isfinite(rotation)):
+            velocity, rotation = 0.0, 0.0
+
+        velocity = float(np.clip(velocity, -0.5, 0.5))
+        rotation = float(np.clip(rotation, -2.0, 2.0))
+        pwm_left = float(np.clip(pwm_left, -1.0, 1.0))
+        pwm_right = float(np.clip(pwm_right, -1.0, 1.0))
+
+        self.images.append(cv2.resize(self.env.front(), (80, 60)))
+        self.labels.append((velocity, rotation))
+    
         self.env.step(pwm_left, pwm_right)
         self.env.render()
 
@@ -127,7 +153,7 @@ class EvaluationAgent(Agent):
     def __init__(self, environment):
         ''' Initializes agent '''
         super().__init__(environment, randomize = True)
-        self.pose_estimator = EvaluationAgent.load_regression_model("assignments/regression-cnn/cnn_lane_pos_estimation.h5")
+        self.pose_estimator = EvaluationAgent.load_regression_model("./assignments/imitation/e2e_cnn.h5")
         self.score = 0
 
     @staticmethod
@@ -174,9 +200,9 @@ def main():
         distortion = False,
         top_down = False,
         cam_height = 10,
-        is_external_map = True,
+        # is_external_map = True,
         randomize_maps_on_reset = False,
-        # video_path = "/tmp/regression-cnn.mp4",
+        # video_path = "/tmp/regression-cnn.mp4"
     )
 
     env.set_view(FRONT_VIEW_MODE)
@@ -187,25 +213,26 @@ def main():
     def on_key_press(symbol, modifiers):
         nonlocal agent
         if symbol == key.ESCAPE: # exit simulation
-            # Saves dataset to /tmp.
             if isinstance(agent, DataAgent):
                 np.save("/tmp/images.npy", agent.images, allow_pickle = True)
                 np.save("/tmp/labels.npy", agent.labels, allow_pickle = True)
             env.close()
             sys.exit(0)
+
         elif (symbol == key.E) or (symbol == key.D):
             # Change to evaluation or data collecting agent.
             pyglet.clock.unschedule(agent.send_commands)
             if (symbol == key.E) and (key.E not in agents): agents[key.E] = EvaluationAgent(env)
             agent = agents[symbol]
             pyglet.clock.schedule_interval(agent.send_commands, 1.0 / env.unwrapped.frame_rate)
+
         elif symbol == key.R:
             agent.randomize()
         elif (symbol == key.P) and isinstance(agent, DataAgent):
             agent.paused = not agent.paused
             print("Data collection is:", "paused" if agent.paused else "unpaused")
 
-        env.render() # show image to user
+        env.render()
 
     # Instantiate agent
     agents = {key.D: DataAgent(env)}
