@@ -1,8 +1,8 @@
 # MAC0318 Intro to Robotics
 # Please fill-in the fields below with your info
 #
-# Name:
-# NUSP:
+# Name: Iago Cesar Tavares de Souza
+# NUSP: 17466770
 #
 # ---
 #
@@ -42,19 +42,24 @@ class Agent:
         self.motor_gain = 0.68*0.0784739898632288
         self.motor_trim = 0.0007500911693361842
 
-        self.pose_estimator = Agent.load_regression_model("pose_estimator.h5")
+        self.pose_estimator = Agent.load_regression_model("./assignments/localization/img/regression-model.h5")
         self.score = 0
 
         self.C = 6
         self.I = 0.0
         self.D = 0.0
 
+        self.Kp, self.Kd, self.Ki = 2, 0.5, 0
+        self.integralError = 0
+        self.previousError = 0
+        self.rotation = 0
+
         # Get test set states (d, alpha).
-        Y = np.load("test_labels.npy", allow_pickle = True)
+        Y = np.load("./assignments/localization/img/test-labels.npy", allow_pickle = True)
         # Linearize.
-        Y_t = 6*Y[:,0]+Y[:,1]
+        Y_t = 6*Y
         # Standard deviation for the transition Gaussians.
-        self.transition_sigma = 0.2
+        self.transition_sigma = 0.7
 
         # Discretize y's into cells.
         n = 10
@@ -108,25 +113,41 @@ class Agent:
         return 6*d+alpha
 
     def correct(self, y: float) -> np.ndarray:
-        ''' Updates belief given p(y|x), where y is the observation (image) and x is the current
-        (discretized) state. '''
-        pass
+        for i, (mu, sigma) in enumerate(self.gaussians):
+            self.pr[i] = gaussian(mu, sigma).pdf(y)
+        self.bel *= self.pr
+        self.bel /= np.sum(self.bel)
+        return self.bel
 
     def predict(self, d: float, alpha: float, v: float, w: float, dt: float) -> np.ndarray:
-        ''' Predicts the belief vector's next value by updating with the probabilistic transition
-        function given by p(x'|x,u,dt), where x' is the next state, x is the current state, u is
-        the action taken and dt is the delta time. '''
-        pass
+        x = Agent.linearize(d, alpha)
+        delta = 6 * (v * math.sin(alpha) * dt) + (w * dt)
+        delta = np.clip(delta, -2, 2)
+        novoBel = np.zeros_like(self.bel)
+        for i, (a, b) in enumerate(self.cells):
+            x_prime = (a + b) / 2
+            prob = 0.0
+            for j, (aPrev, bPrev) in enumerate(self.cells):
+                xPrev = (aPrev + bPrev) / 2
+                xEsperado = xPrev + delta
+                prob += gaussian(xEsperado, self.transition_sigma).pdf(x_prime) * self.bel[j]
+            novoBel[i] = prob
+        if np.sum(novoBel) == 0:
+            novoBel = np.ones_like(novoBel) / len(novoBel)
+        else:
+            novoBel /= np.sum(novoBel)
+        self.bel = novoBel
+        return self.bel
 
     def find_cell(self, y: float):
         ''' Finds which cell y belongs to. '''
         a, b = 0, len(self.cells)
-        while a > b:
+        while a < b:
             k = (a+b)//2
             l, h = self.cells[k]
             if l <= y < h: return k
-            if l > y: b = k
-            else: a = k
+            if y < l: b = k
+            else: a = k+1
         return -1
 
     def get_pwm_control(self, v: float, w: float)-> (float, float):
@@ -136,7 +157,6 @@ class Agent:
         return V_l, V_r
 
     def preprocess(self) -> (float, float, float):
-        '''Returns the metric to be used as signal for the PID controller.'''
         I = cv2.resize(self.env.front()[180:,:,:], (80, 42))/255
         d, alpha = self.pose_estimator.predict(I.reshape((-1, 42, 80, 3)))[0]
         y = Agent.linearize(d, alpha)
@@ -155,11 +175,16 @@ class Agent:
         map_y = (l+h)/2
 
         # Paste your PID controller here.
-        c = 3.5*map_y+0.1*self.I+(map_y-self.D)*5
-        velocity = 0.2
-        rotation = -c
-        self.I += map_y*dt
-        self.D = map_y
+        error = -map_y
+        self.integralError += error * dt
+        derivativeError = (error - self.previousError) / dt
+        self.previousError = error
+        rotation = (
+            self.Kp * error +
+            self.Ki * self.integralError +
+            self.Kd * derivativeError
+        )
+        velocity = float(np.clip(0.2*(1 - 0.7*min(1.0, abs(error)/0.6)), 0.10, 0.25))
 
         # Apply prediction.
         self.predict(d, alpha, velocity, rotation, dt)
@@ -197,7 +222,7 @@ def main():
         distortion = False,
         top_down = False,
         cam_height = 10,
-        is_external_map = True,
+        # is_external_map = True,
         randomize_maps_on_reset = False,
     )
 
